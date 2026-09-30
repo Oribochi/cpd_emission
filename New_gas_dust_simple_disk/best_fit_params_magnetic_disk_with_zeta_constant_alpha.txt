@@ -1,0 +1,6 @@
+Mpdot_best_log -4.010282919282041
+Mpdot_min_log -0.05471708071796044
+Mpdot_max_log 0.03528291928204119
+zeta_max_log 3.088330391318845
+zeta_upper_limit_log -4.896
+zeta_upper_strict_limit_log -4.65

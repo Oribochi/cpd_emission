@@ -1,0 +1,102 @@
+# Blackbody extrapolation at 0.447 mm 
+
+from units_astro import *
+from numpy import exp
+import numpy as np
+
+# this will receive an array of Temperatures and return the plank function for each temperature
+def plank(T, nu):    
+    x=h*nu/(kb*T)
+    mask1 = x < 1e-3  # low frequency limit
+    mask2 = x > 1e1   # high frequency limit
+    result = np.zeros_like(x) #
+    result[mask1] = 2*nu**2/c**2*kb*T[mask1]
+    result[mask2] = 2*h*nu**3/c**2*exp(-x[mask2])
+    mask3 = ~(mask1 | mask2)  # intermediate values
+    result[mask3] = 2*h*nu**3/c**2/(exp(x[mask3])-1)
+    return result*10**26  # to convert to mJy/sr
+
+nu=671e9 # frequency in Hz for 0.447 mm
+flux=0.340 # flux in mJy
+
+nu_test=145e9 # frequency in Hz for 2.07 mm Band 4
+flux_test=0.0214
+
+T_arr=np.array([22, 27, 50]) # array of temperatures in K
+
+I_nu_arr=plank(T_arr, nu) # array of intensities in mJy/sr
+print(f'Intensities at {nu/1e9:.2f} GHz: {I_nu_arr} mJy/sr')
+
+solid_angle=flux/I_nu_arr[0] # sr
+print(f'Solid angle at {nu/1e9:.2f} GHz: {solid_angle} sr')
+# and the solid angles at 27 and 50 scale as 22/T
+solid_angle_arr=solid_angle*22/T_arr # sr
+print(f'Solid angles at {nu/1e9:.2f} GHz: {solid_angle_arr} sr')
+
+# print the fluxes at 27 and 50 K using the solid angles
+fluxes_arr=I_nu_arr*solid_angle_arr # fluxes in mJy
+print(f'Fluxes at {nu/1e9:.2f} GHz: {fluxes_arr} mJy')
+
+# And the sigmas off for each temperature
+Band9_flux=0.143 # mJy
+Sigma9=0.115
+
+sigmas_off_arr=(fluxes_arr-Band9_flux)/Sigma9
+print(f'Sigmas off at {nu/1e9:.2f} GHz: {sigmas_off_arr} sigmas')
+
+# the other case just print sigma_value
+sigma_value=fluxes_arr/Sigma9
+print(f'Sigma value at {nu/1e9:.2f} GHz: {sigma_value} sigmas')
+
+
+# I_nu_test_arr=plank(T_arr, nu_test) # array of intensities in mJy/sr
+# # and the solid angles
+# solid_angle_test=flux_test/I_nu_test_arr # sr
+
+# print(f'Solid angles at {nu_test/1e9:.2f} GHz: {solid_angle_test} sr')
+
+# # we want to scale this using Shibaike 2026, the flux using 22 K was 340 µJy
+# # to have the flux in mJy we need to multiply by the solid angle that give us 340 µJy at 22 K
+
+# solid_angle=0.340/I_nu_arr[0] # sr
+
+# print(f'Solid angle at {nu/1e9:.2f} GHz: {solid_angle} sr')
+
+# # doing a ponderation with the solid angles for test band
+# solid_angle_test_pondered=solid_angle*solid_angle_test/solid_angle_test[0] # sr
+# print(f'Pondered solid angles at {nu/1e9:.2f} GHz: {solid_angle_test_pondered} sr')
+
+# # now calculating the fluxes at 27 K and 50 K using the same solid angle
+
+# fluxes_arr=I_nu_arr*solid_angle_test_pondered # fluxes in mJy
+# print(f'Fluxes at {nu/1e9:.2f} GHz: {fluxes_arr} mJy')
+
+# # To see how much sigmas off we are 
+# Band9_flux=0.143 # mJy
+# Sigma9=0.115
+
+# # calculating the number of sigmas off for each temperature
+# sigmas_off_arr=(fluxes_arr-Band9_flux)/Sigma9
+# print(f'Sigmas off at {nu/1e9:.2f} GHz: {sigmas_off_arr} sigmas')
+
+# # Using that the solid angle scales with sqrt(T)
+
+# ponderation_sqrts=np.sqrt(T_arr[0]/T_arr) # ponderation for the solid angles
+# solid_angle_pondered=solid_angle*ponderation_sqrts # sr
+# print(f'Solid angles pondered at {nu/1e9:.2f} GHz: {solid_angle_pondered} sr')
+
+# fluxes_pondered_arr=I_nu_arr*solid_angle_pondered # fluxes in mJy
+# print(f'Fluxes pondered at {nu/1e9:.2f} GHz: {fluxes_pondered_arr} mJy')
+
+# # print the number of sigmas off for each temperature using the pondered solid angles
+# sigmas_off_pondered_arr=(fluxes_pondered_arr-Band9_flux)/Sigma9
+# print(f'Sigmas off pondered at {nu/1e9:.2f} GHz: {sigmas_off_pondered_arr} sigmas')
+
+# # for example at band 4
+
+# solid_angle_pondered_band4=solid_angle_test[0]*ponderation_sqrts # sr
+# print(f'Solid angles pondered at {nu_test/1e9:.2f} GHz: {solid_angle_pondered_band4} sr')
+
+# # and the fluxes
+# fluxes_pondered_band4_arr=I_nu_test_arr*solid_angle_pondered_band4 # fluxes in mJy
+# print(f'Fluxes pondered at {nu_test/1e9:.2f} GHz: {fluxes_pondered_band4_arr} mJy')

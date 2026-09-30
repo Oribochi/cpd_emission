@@ -1,0 +1,13 @@
+Mpdot_best_log -5.620951148982431
+Mpdot_min_log -0.08304885101756909
+Mpdot_max_log 0.04495114898243102
+Bps_best_log 2.806597572238327
+Bps_min_log -0.3905975722383266
+Bps_max_log 0.07340242776167294
+Bps_upper_log 2.9539999999999997
+Bps_upper_strict_log 2.969999999999999
+zeta_best_log -14.57714481101344
+zeta_min_log -0.3028551889865607
+zeta_max_log 5.637144811013439
+zeta_upper_log -6.15
+zeta_upper_strict_log -5.67

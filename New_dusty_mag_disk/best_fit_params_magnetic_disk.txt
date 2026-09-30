@@ -1,0 +1,8 @@
+Mpdot_best_log -5.607766641844619
+Mpdot_min_log -0.08023335815538069
+Mpdot_max_log 0.04776664184461943
+Bps_best_log 2.796044284028116
+Bps_min_log -0.3880442840281155
+Bps_max_log 0.06795571597188399
+Bps_upper_log 2.9349999999999996
+Bps_upper_strict_log -15.0

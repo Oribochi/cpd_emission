@@ -1,0 +1,6 @@
+alpha_best_log -6.818572905495632
+alpha_min_log -0.11142709450436783
+alpha_max_log 0.09857290549563125
+zeta_max_log -9.959912583324705
+zeta_upper_limit_log -7.343999999999999
+zeta_upper_strict_limit_log -6.960000000000001

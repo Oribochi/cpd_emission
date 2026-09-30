@@ -1,0 +1,96 @@
+# best fit dusty disk for the constant alpha case
+from numpy import log10
+from flux_dusty_disk import F_nu_dust as F
+import matplotlib.pyplot as plt
+import numpy as np
+from units_astro import *
+from nautilus import Prior, Sampler
+from errors import error_param, upper_limit, strict_upper_limit
+import corner
+
+# First our data with the error bars BAND 7 on 2019: 118.5 ± 16.6
+nu = [97.5E9, 145005402197.7, 343.5E9, 671E9] # [nu1, nu2] are the x-axis values , 671E9
+Fnus = [12e-06, 21.4e-06, 0.000121, 0.000143] # [Fnu1, Fnu2] are the y-axis values in Jy , 0.000122
+sFnus = [4.7e-06, 4.1e-06, 0.000013, 0.000115] # [sigma_Fnu1, sigma_Fnu2] are the y-axis errors in Jy , 0.000090
+
+# To mJy
+nu = np.array(nu)
+Fnus = np.array(Fnus)*1E3
+sFnus = np.array(sFnus)*1E3
+
+prior = Prior()
+prior.add_parameter('log_Mpdot', dist=(-15, 0))
+prior.add_parameter('log_alpha', dist=(-10, 0))
+
+def log_likelihood_F(param_dict):
+    Mpdot = 10**param_dict['log_Mpdot']
+    alpha = 10**param_dict['log_alpha']
+
+    ymodels = np.zeros(len(Fnus))
+    Xis = np.zeros(len(Fnus))
+    for i in range(len(Fnus)):
+        ymodels[i] = F(nu[i], Mpdot*Mj/yr, alpha, zeta=0.01)
+        Xis[i] = -0.5*((Fnus[i]-ymodels[i])/sFnus[i])**2
+
+    # ejemplo
+    # the likehood is the product of the likelihoods for each data point
+    # we assume the errors are gaussian
+    # L1 = norm.pdf(Fnus[0]-ymodel1, 0, sFnus[0])
+    # 
+    # 
+    # L2 = norm.pdf(Fnus[1]-ymodel2, 0, sFnus[1])
+    return np.sum(Xis)
+
+sampler_zhu = Sampler(prior, log_likelihood_F, n_live=1000, pool = 16)             
+sampler_zhu.run(verbose=True)
+
+points, log_w, log_l = sampler_zhu.posterior()
+corner.corner(
+    points, weights=np.exp(log_w), bins=20, labels=[r'$\log\left( \frac{dM_p/dt}{M_j/yr} \right)$', r'$\log(\alpha)$'], color='purple',
+    plot_datapoints=False, range=np.repeat(0.999, len(prior.keys)), fontsize=12)
+
+plt.show()
+
+# To see equal weights
+points_equalw, log_w_equalw, log_l_equalw = sampler_zhu.posterior(equal_weight=True)
+
+# now making our errors
+Mpdot_maxl, alpha_maxl = points[np.argmax(log_l)]
+Mpdot_min, Mpdot_max = error_param(points_equalw[:,0], Mpdot_maxl, bin_inf=-15, bin_sup=0)
+alpha_min, alpha_max = error_param(points_equalw[:,1], alpha_maxl, bin_inf=-10, bin_sup=0)
+
+alpha_upper = upper_limit(points_equalw[:,1], -9)
+alpha_upper_strict = strict_upper_limit(points_equalw[:,1])
+
+print('Mpdot =', Mpdot_maxl, Mpdot_min, Mpdot_max)
+print('alpha =',  alpha_maxl, alpha_min, alpha_max)
+print('alpha upper limit =', alpha_upper)
+print('alpha = ', alpha_maxl, alpha_upper-alpha_maxl)
+print('alpha upper strict limit =', alpha_upper_strict)
+print('log_likelihood max =', np.max(log_l))
+
+# vs the real data
+# now making our spectral index
+Mpdot=10**points[np.argmax(log_l)][0]*Mj/yr
+alpha=10**points[np.argmax(log_l)][1]
+
+# now save the fluxes for the simplified model best fit
+nu_arr = np.linspace(nu[0], nu[-1], 100)
+fluxes_strat = np.zeros(len(nu_arr))
+for i in range(len(fluxes_strat)):
+    fluxes_strat[i]=F(nu_arr[i], Mpdot, alpha, zeta=0.01)
+np.savetxt('nus_fluxes_strat.txt', np.column_stack((nu_arr, fluxes_strat)), header='nu [GHz] F_nu [mJy]', fmt='%f %f')
+
+plt.errorbar(nu/1E9, Fnus, yerr=sFnus, fmt='o', label='Observed Data', color='blue')
+plt.plot(nu_arr/1E9, fluxes_strat, label='Model Prediction', color='red')
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel('Frequency (GHz)')
+plt.ylabel('Flux Density (mJy)')
+plt.title('Flux Density vs Frequency for CPD around PDS 70 c')
+plt.legend()
+plt.grid(True, which="both", ls="--")
+plt.savefig('best_fit_dusty_disk.png', dpi=300)
+plt.show()
+
+print('Spectral index:', np.log10(fluxes_strat[-1]/fluxes_strat[0])/np.log10(nu_arr[-1]/nu_arr[0]))
